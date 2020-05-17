@@ -1,4 +1,5 @@
 const { Race } = require('./race.model');
+const connection = require('../../sockets/socket').connection();
 
 const getRaces = async (req, res) => {
     try {

@@ -1,10 +1,14 @@
-const express = require('express');
 const bodyParser = require('body-parser')
 const cors = require('cors');
 
+const app = require('express')();
+const server = require('http').Server(app);
+const socket = require('./sockets/socket');
+
+socket.connect(server);
+
 const routes = require('./routes/routes');
 
-const app = express();
 app.use(cors({origin:true,credentials: true})); // allow cors headers
 app.use(bodyParser.json());
 
@@ -23,7 +27,7 @@ app.get('/', (req, res) => { res.send('Hello world!') });
 
 app.use('/', routes);
 
-app.listen(port, () => {
+server.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });
 
