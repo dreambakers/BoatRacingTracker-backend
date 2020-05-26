@@ -7,5 +7,8 @@ router
     .get('/', controller.getRaces)
     .post('/', controller.updateRaceData)
     .post('/create', controller.createRace)
+    .post('/start/:id', controller.startRace)
+    .post('/stop/:id', controller.stopRace)
+    .post('/delete/:id', controller.deleteRace)
 
 module.exports = router;

@@ -12,11 +12,18 @@ const raceSchema = new mongoose.Schema({
             ]
         }
     ],
-    inProgress: { type: Boolean },
+    status: {
+        type: String,
+        enum: ['waiting', 'inProgress', 'finished'],
+        default: 'waiting'
+    },
     startingLocation: {
         lat: { type: Number },
         lng: { type: Number }
-    }
+    },
+    laps: Number,
+    name: String,
+    startedAt: Date
 }, {
     timestamps: true
 });

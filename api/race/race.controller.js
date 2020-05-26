@@ -3,7 +3,7 @@ const connection = require('../../sockets/socket').connection();
 
 const getRaces = async (req, res) => {
     try {
-        let races = await Race.find({ }).lean();
+        let races = await Race.find({}).lean();
         res.json({
             success: 1,
             races
@@ -22,12 +22,12 @@ const createRace = async (req, res) => {
         const race = new Race(req.body);
         let result = await race.save();
         res.status(200).json({
-            success: 1,
+            success: !!result,
             race: result
-        })
+        });
     } catch (error) {
         console.log(error);
-        res.json({
+        res.status(500).json({
             success: 0,
             msg: 'An error occured while creating the race'
         });
@@ -74,6 +74,54 @@ const updateRaceData = async (req, res) => {
     }
 }
 
+const startRace = async (req, res) => {
+    try {
+        const result = await Race.findByIdAndUpdate({ _id: req.params.id }, { status: 'inProgress', startedAt: Date.now() }, { new: true });
+        res.json({
+            success: !!result.startedAt,
+            race: result
+        });
+    } catch (error) {
+        console.log(error);
+        res.json({
+            success: 0,
+            msg: 'An error occured while starting the race'
+        });
+    }
+}
+
+const stopRace = async (req, res) => {
+    try {
+        const result = await Race.findByIdAndUpdate({ _id: req.params.id }, { status: 'finished' }, { new: true });
+        res.json({
+            success: !!result.status && result.status === 'finished',
+            race: result
+        });
+    } catch (error) {
+        console.log(error);
+        res.json({
+            success: 0,
+            msg: 'An error occured while stopping the race'
+        });
+    }
+}
+
+const deleteRace = async (req, res) => {
+    try {
+        const result = await Race.findByIdAndDelete({ _id: req.params.id });
+        res.json({
+            success: !!result._id,
+            race: result
+        });
+    } catch (error) {
+        console.log(error);
+        res.json({
+            success: 0,
+            msg: 'An error occured while deleting the race'
+        });
+    }
+}
+
 module.exports = {
-    getRaces, createRace, updateRaceData,
+    getRaces, createRace, updateRaceData, startRace, stopRace, deleteRace
 };
