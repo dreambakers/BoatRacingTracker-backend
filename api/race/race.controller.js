@@ -36,40 +36,45 @@ const createRace = async (req, res) => {
 
 const updateRaceData = async (req, res) => {
     try {
-        let races = await Race.find({});
-        const currentRace = races[0];
-        const { name, lat, lng } = req.body;
-        const contestant = currentRace.contestants.find(contestant => contestant.name === name);
-        if (contestant) {
-            contestant.locationHistory.push(
-                {
-                    lat,
-                    lng
-                }
-            );
-        } else {
-            const newContestant = {
-                name,
-                locationHistory: [
+        let race = await Race.findById({ _id: req.params.id });
+        if (race) {
+            const { name, lat, lng } = req.body;
+            const contestant = race.contestants.find(contestant => contestant.name === name);
+            if (contestant) {
+                contestant.locationHistory.push(
                     {
                         lat,
                         lng
                     }
-                ]
+                );
+            } else {
+                const newContestant = {
+                    name,
+                    locationHistory: [
+                        {
+                            lat,
+                            lng
+                        }
+                    ]
+                }
+                race.contestants.push(newContestant);
             }
-            currentRace.contestants.push(newContestant);
+            connection.sendEvent("update", race);
+            race = await race.save();
+
+            console.log(race)
+
+            res.json({
+                success: !!race,
+                race
+            });
         }
-        connection.sendEvent("update", currentRace);
-        await currentRace.save();
-        res.json({
-            success: 1,
-            race: currentRace
-        });
+        throw { message: 'No race found against the provided ID' };
     } catch (error) {
         console.log(error);
         res.json({
             success: 0,
-            msg: 'An error occured while updating the race'
+            msg: error.message || 'An error occured while updating the race'
         });
     }
 }

@@ -5,8 +5,8 @@ const router = express.Router();
 
 router
     .get('/', controller.getRaces)
-    .post('/', controller.updateRaceData)
     .post('/create', controller.createRace)
+    .post('/:id', controller.updateRaceData)
     .post('/start/:id', controller.startRace)
     .post('/stop/:id', controller.stopRace)
     .post('/delete/:id', controller.deleteRace)
