@@ -23,7 +23,11 @@ const raceSchema = new mongoose.Schema({
     },
     laps: Number,
     name: String,
-    startedAt: Date
+    startedAt: Date,
+    legs: [
+        { type : mongoose.Schema.Types.ObjectId, ref: 'Race' }
+    ],
+    legOf: { type : mongoose.Schema.Types.ObjectId, ref: 'Race' }
 }, {
     timestamps: true
 });

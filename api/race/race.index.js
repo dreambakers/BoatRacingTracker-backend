@@ -10,5 +10,6 @@ router
     .post('/start/:id', controller.startRace)
     .post('/stop/:id', controller.stopRace)
     .post('/delete/:id', controller.deleteRace)
+    .post('/endLeg/:id', controller.endLeg)
 
 module.exports = router;

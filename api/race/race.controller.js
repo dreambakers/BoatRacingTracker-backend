@@ -3,7 +3,7 @@ const connection = require('../../sockets/socket').connection();
 
 const getRaces = async (req, res) => {
     try {
-        let races = await Race.find({}).lean();
+        let races = await Race.find({}).populate('legs').lean();
         res.json({
             success: 1,
             races
@@ -61,8 +61,6 @@ const updateRaceData = async (req, res) => {
             }
             connection.sendEvent("update", race);
             race = await race.save();
-
-            console.log(race)
 
             res.json({
                 success: !!race,
@@ -127,6 +125,56 @@ const deleteRace = async (req, res) => {
     }
 }
 
+const endLeg = async (req, res) => {
+    try {
+        let race = await Race.findById({ _id: req.params.id }).populate('legOf');
+        if (race) {
+
+            if (race.isLeg) {
+                // TODO
+            }
+
+            // first leg going to be created
+            else {
+                let newLeg = new Race({
+                    startingLocation: {
+                        lat: race.startingLocation.lat,
+                        lat: race.startingLocation.lng,
+                    },
+                    laps: race.laps,
+                    name: 'Leg 1',
+                    isLeg: true,
+                    legOf: race._id
+                });
+
+                newLeg = await newLeg.save();
+                race.legs = [ ...race.legs, newLeg._id ];
+                race = await race.save();
+
+                Race.findById(race._id).populate('legs').then(
+                    race => {
+                        if (race) {
+                            connection.sendEvent("update", race);
+                        }
+                    }
+                );
+
+                return res.json({
+                    success: !!newLeg,
+                    race
+                });
+            }
+        }
+        throw { message: 'No race found against the provided ID' };
+    } catch (error) {
+        console.log(error);
+        res.json({
+            success: 0,
+            msg: 'An error occured while deleting the race'
+        });
+    }
+}
+
 module.exports = {
-    getRaces, createRace, updateRaceData, startRace, stopRace, deleteRace
+    getRaces, createRace, updateRaceData, startRace, stopRace, deleteRace, endLeg
 };
