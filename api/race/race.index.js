@@ -10,6 +10,7 @@ router
     .post('/start/:id', controller.startRace)
     .post('/stop/:id', controller.stopRace)
     .post('/delete/:id', controller.deleteRace)
-    .post('/endLeg/:id', controller.endLeg)
+    .post('/createLeg/:id', controller.createLeg)
+    .post('/stopLeg/:id', controller.stopLeg)
 
 module.exports = router;

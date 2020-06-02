@@ -24,6 +24,10 @@ const raceSchema = new mongoose.Schema({
     laps: Number,
     name: String,
     startedAt: Date,
+    canCreateLegs: {
+        type: Boolean,
+        default: false
+    },
     legs: [
         { type : mongoose.Schema.Types.ObjectId, ref: 'Race' }
     ],

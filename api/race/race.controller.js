@@ -4,7 +4,7 @@ const connection = require('../../sockets/socket').connection();
 const getRaces = async (req, res) => {
     try {
         let races = await Race.find({}).populate('legs').lean();
-        res.json({
+        return res.json({
             success: 1,
             races
         });
@@ -21,7 +21,7 @@ const createRace = async (req, res) => {
     try {
         const race = new Race(req.body);
         let result = await race.save();
-        res.status(200).json({
+        return res.status(200).json({
             success: !!result,
             race: result
         });
@@ -62,7 +62,7 @@ const updateRaceData = async (req, res) => {
             connection.sendEvent("update", race);
             race = await race.save();
 
-            res.json({
+            return res.json({
                 success: !!race,
                 race
             });
@@ -80,7 +80,7 @@ const updateRaceData = async (req, res) => {
 const startRace = async (req, res) => {
     try {
         const result = await Race.findByIdAndUpdate({ _id: req.params.id }, { status: 'inProgress', startedAt: Date.now() }, { new: true });
-        res.json({
+        return res.json({
             success: !!result.startedAt,
             race: result
         });
@@ -95,8 +95,12 @@ const startRace = async (req, res) => {
 
 const stopRace = async (req, res) => {
     try {
-        const result = await Race.findByIdAndUpdate({ _id: req.params.id }, { status: 'finished' }, { new: true });
-        res.json({
+        const { allowLegCreation } = req.body;
+        const result = await Race.findByIdAndUpdate({ _id: req.params.id }, {
+            status: 'finished',
+            canCreateLegs: !!allowLegCreation
+        }, { new: true });
+        return res.json({
             success: !!result.status && result.status === 'finished',
             race: result
         });
@@ -109,10 +113,43 @@ const stopRace = async (req, res) => {
     }
 }
 
+const stopLeg = async (req, res) => {
+    try {
+        let leg = await Race.findById({ _id: req.params.id });
+        const { allowLegCreation } = req.body;
+
+        if (leg) {
+
+            const promises = [
+                Race.findByIdAndUpdate({ _id: req.params.id }, { status: 'finished' }, { new: true }),
+                Race.findByIdAndUpdate({ _id: leg.legOf }, { canCreateLegs: !!allowLegCreation }, { new: true })
+            ]
+
+            const results = await Promise.all(promises);
+
+            const updatedLeg = results[0];
+            const updatedParent = results[1];
+
+            return res.json({
+                success: !!updatedLeg && !!updatedParent,
+                leg: updatedLeg,
+                race: updatedParent
+            });
+        }
+        throw { message: 'No leg found against the provided ID' };
+    } catch (error) {
+        console.log(error);
+        res.json({
+            success: 0,
+            msg: 'An error occured while stopping the race'
+        });
+    }
+}
+
 const deleteRace = async (req, res) => {
     try {
         const result = await Race.findByIdAndDelete({ _id: req.params.id });
-        res.json({
+        return res.json({
             success: !!result._id,
             race: result
         });
@@ -125,56 +162,31 @@ const deleteRace = async (req, res) => {
     }
 }
 
-const endLeg = async (req, res) => {
+const createLeg = async (req, res) => {
     try {
-        let race = await Race.findById({ _id: req.params.id }).populate('legOf');
-        if (race) {
-
-            if (race.isLeg) {
-                // TODO
-            }
-
-            // first leg going to be created
-            else {
-                let newLeg = new Race({
-                    startingLocation: {
-                        lat: race.startingLocation.lat,
-                        lat: race.startingLocation.lng,
-                    },
-                    laps: race.laps,
-                    name: 'Leg 1',
-                    isLeg: true,
-                    legOf: race._id
-                });
-
-                newLeg = await newLeg.save();
-                race.legs = [ ...race.legs, newLeg._id ];
-                race = await race.save();
-
-                Race.findById(race._id).populate('legs').then(
-                    race => {
-                        if (race) {
-                            connection.sendEvent("update", race);
-                        }
-                    }
-                );
-
-                return res.json({
-                    success: !!newLeg,
-                    race
-                });
-            }
+        let parentRace = await Race.findById({ _id: req.params.id });
+        if (parentRace) {
+            let newLeg = new Race(req.body);
+            newLeg = await newLeg.save();
+            parentRace.canCreateLegs = false;
+            parentRace.legs = [ ...parentRace.legs, newLeg._id ];
+            parentRace = await parentRace.save();
+            return res.json({
+                success: !!newLeg,
+                leg: newLeg,
+                race: parentRace
+            });
         }
-        throw { message: 'No race found against the provided ID' };
+        throw { message: 'No parent race found against the provided ID' };
     } catch (error) {
         console.log(error);
         res.json({
             success: 0,
-            msg: 'An error occured while deleting the race'
+            msg: 'An error occured while creating the leg'
         });
     }
 }
 
 module.exports = {
-    getRaces, createRace, updateRaceData, startRace, stopRace, deleteRace, endLeg
+    getRaces, createRace, updateRaceData, startRace, stopRace, deleteRace, createLeg, stopLeg
 };
