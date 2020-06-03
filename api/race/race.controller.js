@@ -1,4 +1,5 @@
 const { Race } = require('./race.model');
+const constants = require('../../constants');
 const connection = require('../../sockets/socket').connection();
 
 const getRaces = async (req, res) => {
@@ -35,37 +36,45 @@ const createRace = async (req, res) => {
 }
 
 const updateRaceData = async (req, res) => {
+    const getOpenLeg = race => {
+        return race.legs.find(leg => leg.status !== constants.raceStatus.finished);
+    }
     try {
-        let race = await Race.findById({ _id: req.params.id });
+        let race = await Race.findById({ _id: req.params.id }).populate('legs');
         if (race) {
-            const { name, lat, lng } = req.body;
-            const contestant = race.contestants.find(contestant => contestant.name === name);
-            if (contestant) {
-                contestant.locationHistory.push(
-                    {
-                        lat,
-                        lng
-                    }
-                );
+            if (race.status === constants.raceStatus.finished && !!!getOpenLeg(race)) {
+                throw { message: 'Race is closed' };
             } else {
-                const newContestant = {
-                    name,
-                    locationHistory: [
+                race = race.status === constants.raceStatus.finished ? getOpenLeg(race) : race;
+                const { name, lat, lng } = req.body;
+                const contestant = race.contestants.find(contestant => contestant.name === name);
+                if (contestant) {
+                    contestant.locationHistory.push(
                         {
                             lat,
                             lng
                         }
-                    ]
+                    );
+                } else {
+                    const newContestant = {
+                        name,
+                        locationHistory: [
+                            {
+                                lat,
+                                lng
+                            }
+                        ]
+                    }
+                    race.contestants.push(newContestant);
                 }
-                race.contestants.push(newContestant);
-            }
-            connection.sendEvent("update", race);
-            race = await race.save();
+                connection.sendEvent("update", race);
+                race = await race.save();
 
-            return res.json({
-                success: !!race,
-                race
-            });
+                return res.json({
+                    success: !!race,
+                    race
+                });
+            }
         }
         throw { message: 'No race found against the provided ID' };
     } catch (error) {
@@ -95,10 +104,9 @@ const startRace = async (req, res) => {
 
 const stopRace = async (req, res) => {
     try {
-        const { allowLegCreation } = req.body;
         const result = await Race.findByIdAndUpdate({ _id: req.params.id }, {
             status: 'finished',
-            canCreateLegs: !!allowLegCreation
+            canCreateLegs: !!req.body.allowLegCreation
         }, { new: true });
         return res.json({
             success: !!result.status && result.status === 'finished',
@@ -122,7 +130,7 @@ const stopLeg = async (req, res) => {
 
             const promises = [
                 Race.findByIdAndUpdate({ _id: req.params.id }, { status: 'finished' }, { new: true }),
-                Race.findByIdAndUpdate({ _id: leg.legOf }, { canCreateLegs: !!allowLegCreation }, { new: true })
+                Race.findByIdAndUpdate({ _id: leg.legOf }, { canCreateLegs: !!req.body.allowLegCreation }, { new: true })
             ]
 
             const results = await Promise.all(promises);
