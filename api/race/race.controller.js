@@ -123,10 +123,13 @@ const stopRace = async (req, res) => {
 
 const deleteRace = async (req, res) => {
     try {
-        const result = await Race.findByIdAndDelete({ _id: req.params.id });
+        const results = await Promise.all([
+            Race.findByIdAndDelete({ _id: req.params.id }),
+            Race.deleteMany({ legOf: req.params.id })
+        ]);
         return res.json({
-            success: !!result._id,
-            race: result
+            success: !!results[0]._id,
+            race: results[0]
         });
     } catch (error) {
         console.log(error);
