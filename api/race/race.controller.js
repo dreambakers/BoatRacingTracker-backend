@@ -1,4 +1,5 @@
 const { Race } = require('./race.model');
+const { getRandomColor } = require('../utils/utility');
 const constants = require('../../constants');
 const connection = require('../../sockets/socket').connection();
 
@@ -57,6 +58,7 @@ const updateRaceData = async (req, res) => {
                     );
                 } else {
                     const newContestant = {
+                        color: getRandomColor(race.contestants.map(contestant => contestant.color)),
                         name,
                         locationHistory: [
                             {

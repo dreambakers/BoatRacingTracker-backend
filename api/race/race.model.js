@@ -3,11 +3,12 @@ const { mongoose } = require('../../db/connection');
 const raceSchema = new mongoose.Schema({
     contestants: [
         {
-            name: { type: String },
+            color: String,
+            name: String,
             locationHistory: [
                 {
-                    lat: { type: Number },
-                    lng: { type: Number }
+                    lat: Number,
+                    lng: Number
                 }
             ]
         }
@@ -18,8 +19,8 @@ const raceSchema = new mongoose.Schema({
         default: 'waiting'
     },
     startingLocation: {
-        lat: { type: Number },
-        lng: { type: Number }
+        lat: Number,
+        lng: Number
     },
     laps: Number,
     name: String,
