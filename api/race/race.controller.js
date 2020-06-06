@@ -53,7 +53,8 @@ const updateRaceData = async (req, res) => {
                     contestant.locationHistory.push(
                         {
                             lat,
-                            lng
+                            lng,
+                            time: Date.now()
                         }
                     );
                 } else {
@@ -63,7 +64,8 @@ const updateRaceData = async (req, res) => {
                         locationHistory: [
                             {
                                 lat,
-                                lng
+                                lng,
+                                time: Date.now()
                             }
                         ]
                     }

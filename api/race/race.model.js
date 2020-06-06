@@ -8,7 +8,8 @@ const raceSchema = new mongoose.Schema({
             locationHistory: [
                 {
                     lat: Number,
-                    lng: Number
+                    lng: Number,
+                    time: Date
                 }
             ]
         }
